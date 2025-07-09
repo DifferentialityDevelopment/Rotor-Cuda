@@ -487,15 +487,29 @@ void sha256_65(unsigned char *input, unsigned char *digest)
 
 void sha256_checksum(uint8_t *input, int length, uint8_t *checksum)
 {
-
     uint32_t s[8];
     uint8_t b[64];
     memcpy(b, input, length);
     memcpy(b + length, _sha256::pad, 56 - length);
-    WRITEBE64(b + 56, length << 3);
+    
+    // Fix: Set the bit length in big-endian format correctly
+    uint64_t bit_length = (uint64_t)length << 3;
+    b[56] = (bit_length >> 56) & 0xFF;
+    b[57] = (bit_length >> 48) & 0xFF;
+    b[58] = (bit_length >> 40) & 0xFF;
+    b[59] = (bit_length >> 32) & 0xFF;
+    b[60] = (bit_length >> 24) & 0xFF;
+    b[61] = (bit_length >> 16) & 0xFF;
+    b[62] = (bit_length >> 8) & 0xFF;
+    b[63] = bit_length & 0xFF;
+    
     _sha256::Transform2(s, b);
-    WRITEBE32(checksum, s[0]);
-
+    
+    // Extract first 4 bytes in big-endian format
+    checksum[0] = (s[0] >> 24) & 0xFF;
+    checksum[1] = (s[0] >> 16) & 0xFF;
+    checksum[2] = (s[0] >> 8) & 0xFF;
+    checksum[3] = s[0] & 0xFF;
 }
 
 std::string sha256_hex(unsigned char *digest)

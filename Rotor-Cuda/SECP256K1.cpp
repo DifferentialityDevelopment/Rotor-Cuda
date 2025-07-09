@@ -82,7 +82,7 @@ void CheckAddress(Secp256K1* T, std::string address, std::string privKeyStr)
 
 	std::string calcAddress = T->GetAddress(isCompressed, pub);
 
-	printf("Adress : %s ", address.c_str());
+	printf("Address : %s ", address.c_str());
 
 	if (address == calcAddress) {
 		printf("OK!\n");

@@ -197,6 +197,8 @@ int main(int argc, char** argv)
 	// Global Init
 	Timer::Init();
 	rseed(Timer::getSeed32());
+
+#ifdef WIN64
 	struct console
 	{
 		console(unsigned width, unsigned height)
@@ -239,6 +241,8 @@ int main(int argc, char** argv)
 	int color = 14;
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(hConsole, color);
+#endif
+
 	bool gpuEnable = false;
 	bool gpuAutoGrid = true;
 	int compMode = SEARCH_COMPRESSED;
@@ -329,11 +333,7 @@ int main(int argc, char** argv)
 				return 0;
 			}
 			else if (optArg.equals("-l", "--list")) {
-#ifdef WIN64
 				GPUEngine::PrintCudaInfo();
-#else
-				printf("  GPU code not compiled, use -DWITHGPU when compiling.\n");
-#endif
 				return 0;
 			}
 			else if (optArg.equals("-u", "--uncomp")) {
