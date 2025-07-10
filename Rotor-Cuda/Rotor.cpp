@@ -549,18 +549,23 @@ void Rotor::checkSingleAddressesSSE(bool compressed, Int key, int i, Point p1, P
 void Rotor::getCPUStartingKey(Int & tRangeStart, Int & tRangeEnd, Int & key, Point & startP)
 {
 	if (rKey <= 0) {
+		// Sequential mode: start from the beginning of the thread's range
 		key.Set(&tRangeStart);
 		printf("  CPU Core     : Start from range %s -> \n\n", key.GetBase16().c_str());
 	}
 	else {
+		// Hybrid mode: Generate random key within this thread's specific range
+		Int threadRangeDiff;
+		threadRangeDiff.Set(&tRangeEnd);
+		threadRangeDiff.Sub(&tRangeStart);
 		
-		key.Rand(256);
+		key.Rand(&threadRangeDiff);  // Random number from 0 to (tRangeEnd-tRangeStart)
+		key.Add(&tRangeStart);       // Shift to this thread's range: tRangeStart to tRangeEnd
 	}
 	rhex = key;
 	Int km(&key);
 	km.Add((uint64_t)CPU_GRP_SIZE / 2);
 	startP = secp->ComputePublicKey(&km);
-
 }
 
 // ----------------------------------------------------------------------------
@@ -844,13 +849,40 @@ void Rotor::getGPUStartingKeys(Int & tRangeStart, Int & tRangeEnd, int groupSize
 			printf("  Base Key     : Randomly changes %d start Private keys every %llu.000.000.000 on the counter\n\n", nbThread, rKey);
 		}
 		
+		// Calculate the range for each GPU thread
+		Int totalGpuRange;
+		totalGpuRange.Set(&tRangeEnd);
+		totalGpuRange.Sub(&tRangeStart);
+		
+		Int threadRange;
+		Int nbThreadsInt;
+		nbThreadsInt.SetInt32(nbThread);
+		threadRange.Set(&totalGpuRange);
+		threadRange.Div(&nbThreadsInt);
+		
 		for (int i = 0; i < nbThread; i++) {
-			keys[i].Rand(256);
+			// Calculate this thread's range
+			Int threadStart, threadEnd;
+			threadStart.Set(&tRangeStart);
+			Int offset;
+			offset.Mult(&threadRange, (uint64_t)i);
+			threadStart.Add(&offset);
+			
+			threadEnd.Set(&threadStart);
+			threadEnd.Add(&threadRange);
+			
+			// Generate random key within this thread's specific range
+			Int threadRangeDiff;
+			threadRangeDiff.Set(&threadEnd);
+			threadRangeDiff.Sub(&threadStart);
+			
+			keys[i].Rand(&threadRangeDiff);
+			keys[i].Add(&threadStart);
 			rhex = keys[i];
+			
 			Int k(keys + i);
-			k.Add((uint64_t)(groupSize / 2));	// Starting key is at the middle of the group
+			k.Add((uint64_t)(groupSize / 2));
 			p[i] = secp->ComputePublicKey(&k);
-
 		}
 	}
 	else {

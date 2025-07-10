@@ -83,10 +83,19 @@ Where TARGETS is one address/xpont, or multiple hashes/xpoints file
                                                :+COUNT
                                                Where START, END, COUNT are in hex format
 -r, --rkey Rkey                          : Reloads random start Private key every (-r 10 = 10.000.000.000), default is disabled
+                                              In random mode, the search space is divided evenly between all threads,
+                                              and each thread gets a random starting point within its assigned sub-range
 -v, --version                            : Show version
 ```
 
 ### For random search add -r 1 to parameters (-r 1-1000)
+
+**Random Mode Behavior:**
+- When using `-r` parameter, the search space is divided evenly between all CPU/GPU threads
+- Each thread is assigned a specific sub-range of the total search space
+- Within each thread's sub-range, a random starting point is generated
+- This ensures full coverage of the search space while maintaining randomization
+- Every `-r` interval (in billions of iterations), new random starting points are generated within each thread's assigned range
 
 # CPU mode :
 Run ```Rotor-Cuda.exe -t 6 -m addresses --coin BTC --range 1:1fffffffff -i puzzle_1_37_hash160_out_sorted.bin```
@@ -216,6 +225,12 @@ C:\Users\user>Rotor-Cuda.exe -t 6 -m addresses --coin BTC --range 1:1fffffffff -
 
   [00:00:40] [R: 0] [89B7A47117DDB7E9F1C81852C06A3B3F29F6F6ECE4621917A469E7A7AB493ABF] [F: 0] [CPU+GPU: 11.93 Mk/s] [GPU: 0.00 Mk/s] [T: 491,051,008]
  ```
+
+ **Note:** In this example with 6 CPU threads and `-r 2`:
+- The range `1:1fffffffff` is divided into 6 equal sub-ranges (one per thread)
+- Each thread gets a random starting point within its assigned sub-range
+- Every 2 billion iterations, new random starting points are generated within each thread's sub-range
+- This provides better search space coverage compared to fully random generation
 
 ### For random search add -r 1 to parameters (-r 1-1000)
 Run ```Rotor-Cuda.exe -t 6 -m address --coin eth --range 8000000:fffffff 0xfda5c442e76a95f96c09782f1a15d3b58e32404f```
